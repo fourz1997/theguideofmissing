@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>思念指南</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-brown: #3E2723;
+            --secondary-brown: #5D4037;
+            --btn-color: #8D6E63;
+            --bg-beige: #F5F5DC;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Noto Serif TC', serif;
+            background-color: var(--bg-beige);
+            overflow: hidden;
+        }
+
+        #bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('bg_paper.png');
+            background-size: cover; opacity: 0.5; z-index: -1;
+        }
+
+        .container {
+            display: flex; flex-direction: column;
+            align-items: center; height: 100%; width: 100%;
+            box-sizing: border-box; padding: 24px;
+        }
+
+        .header { margin-top: 60px; text-align: center; }
+        h1 {
+            font-size: 42px; color: var(--primary-brown); margin: 0;
+            font-weight: 700; letter-spacing: 2px;
+        }
+        .info-text {
+            font-size: 14px; color: var(--secondary-brown); opacity: 0.7;
+            margin-top: 16px; line-height: 1.8;
+        }
+
+        .main-cluster {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; width: 100%;
+            margin-top: -40px; /* 稍微往上提一點，符合作家視覺重心 */
+        }
+
+        .compass-box { position: relative; width: 280px; height: 280px; }
+        .compass-part { position: absolute; width: 100%; height: 100%; }
+
+        #poem-display {
+            height: 140px; display: flex; align-items: center; justify-content: center;
+            text-align: center; font-size: 18px; color: var(--secondary-brown);
+            line-height: 28px; padding: 20px; white-space: pre-wrap;
+        }
+
+        .btn-group { display: flex; gap: 12px; }
+        button {
+            background-color: var(--btn-color); color: white; border: none;
+            padding: 12px 24px; border-radius: 4px; font-size: 16px;
+            font-family: 'Noto Serif TC', serif; cursor: pointer;
+        }
+        button:active { opacity: 0.7; }
+
+        .history-btn {
+            margin-bottom: 60px; background: none; border: none;
+            font-size: 24px; cursor: pointer; opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div id="bg-overlay"></div>
+    <div class="container">
+        <div class="header">
+            <h1 id="app-title">思念指南</h1>
+            <div id="date-weather" class="info-text">2026年 02月 18日<br>台北 讀取中...</div>
+        </div>
+
+        <div class="main-cluster">
+            <div class="compass-box">
+                <img src="compass_dial.png" class="compass-part" id="dial">
+                <img src="compass_needle.png" class="compass-part" id="needle">
+            </div>
+            <div id="poem-display">正在同步思念...</div>
+            <div class="btn-group">
+                <button id="refresh-btn">轉動心情</button>
+                <button id="save-btn">收藏此句</button>
+            </div>
+        </div>
+        <button class="history-btn">📜</button>
+    </div>
+
+    <script>
+        const SHEET_URL = "你的_CSV_網址"; // ⬅️ 記得換成你的
+        let poemList = [];
+
+        function updateDate() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}年 ${String(now.getMonth() + 1).padStart(2, '0')}月 ${String(now.getDate()).padStart(2, '0')}日`;
+            document.getElementById('date-weather').innerHTML = `${dateStr}<br>讀取天氣中...`;
+            return dateStr;
+        }
+
+        async function fetchWeather(dateStr) {
+            try {
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=25.03&longitude=121.56&current_weather=true");
+                const json = await res.json();
+                const temp = Math.round(json.current_weather.temperature);
+                const code = json.current_weather.weathercode;
+                const cond = code === 0 ? "晴" : (code < 4 ? "陰" : "雨");
+                document.getElementById('date-weather').innerHTML = `${dateStr}<br>${cond} ${temp}°C`;
+            } catch (e) { document.getElementById('date-weather').innerHTML = `${dateStr}<br>台北 天氣未知`; }
+        }
+
+        async function init() {
+            const dateStr = updateDate(); fetchWeather(dateStr);
+            try {
+                const res = await fetch(SHEET_URL);
+                const text = await res.text();
+                const lines = text.split('\n').map(l => l.trim().replace(/"/g, ''));
+                if (lines.length >= 4) {
+                    document.getElementById('app-title').innerText = lines[0];
+                    document.getElementById('refresh-btn').innerText = lines[1];
+                    document.getElementById('save-btn').innerText = lines[2];
+                    poemList = lines.slice(3).map(p => p.replace(/ /g, '\n'));
+                    showNewPoem(false);
+                }
+            } catch (e) { document.getElementById('poem-display').innerText = "暫時失去聯繫，請檢查網路。"; }
+        }
+
+        function showNewPoem(animate = true) {
+            if (poemList.length === 0) return;
+            const needle = document.getElementById('needle');
+            if (animate) {
+                needle.style.transition = "transform 1s cubic-bezier(0.45, 0.05, 0.55, 0.95)";
+                needle.style.transform = "rotate(720deg)";
+                setTimeout(() => {
+                    needle.style.transition = "none";
+                    needle.style.transform = "rotate(0deg)";
+                    document.getElementById('poem-display').innerText = poemList[Math.floor(Math.random() * poemList.length)];
+                }, 1000);
+            } else {
+                document.getElementById('poem-display').innerText = poemList[Math.floor(Math.random() * poemList.length)];
+            }
+        }
+
+        document.getElementById('refresh-btn').onclick = () => showNewPoem(true);
+        init();
+    </script>
+</body>
+</html>
