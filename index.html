@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>思念指南</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -16,13 +17,11 @@
             margin: 0; padding: 0; height: 100%;
             font-family: 'Noto Serif TC', serif;
             background-color: var(--bg-beige);
-            /* 防止手機下拉重整 */
-            overscroll-behavior: none;
+            overscroll-behavior: none; /* 禁止下拉重整 */
         }
 
         #bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* 這裡假設你有上傳 bg_paper.png，如果沒有會顯示米色背景 */
             background-image: url('bg_paper.png');
             background-size: cover; opacity: 0.5; z-index: -1;
         }
@@ -34,42 +33,21 @@
             box-sizing: border-box; padding: 24px;
         }
 
-        /* 標題區 */
         .header { margin-top: 40px; text-align: center; }
-        h1 {
-            font-size: 36px; color: var(--primary-brown); margin: 0;
-            font-weight: 700; letter-spacing: 2px;
-        }
-        .info-text {
-            font-size: 14px; color: var(--secondary-brown); opacity: 0.7;
-            margin-top: 10px; line-height: 1.6;
-        }
+        h1 { font-size: 36px; color: var(--primary-brown); margin: 0; font-weight: 700; letter-spacing: 2px; }
+        .info-text { font-size: 14px; color: var(--secondary-brown); opacity: 0.7; margin-top: 10px; line-height: 1.6; }
 
-        /* 中間核心區 (指南針+詩) */
-        .main-cluster {
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            width: 100%; flex: 1;
-        }
-
-        .compass-box {
-            position: relative; width: 260px; height: 260px;
-            margin-bottom: 20px;
-        }
-        .compass-part {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; object-fit: contain;
-        }
+        .main-cluster { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; flex: 1; }
+        .compass-box { position: relative; width: 260px; height: 260px; margin-bottom: 20px; }
+        .compass-part { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
 
         #poem-display {
             min-height: 100px; display: flex; align-items: center; justify-content: center;
             text-align: center; font-size: 18px; color: var(--secondary-brown);
-            line-height: 1.8; padding: 0 20px; white-space: pre-wrap;
-            margin-bottom: 30px;
+            line-height: 1.8; padding: 0 20px; white-space: pre-wrap; margin-bottom: 30px;
         }
 
-        /* 按鈕區 */
-        .btn-group { display: flex; gap: 15px; margin-bottom: 20px;}
+        .btn-group { display: flex; gap: 15px; margin-bottom: 20px; }
         button {
             background-color: var(--btn-color); color: white; border: none;
             padding: 12px 24px; border-radius: 30px; font-size: 16px;
@@ -79,10 +57,32 @@
         button:active { transform: scale(0.95); }
 
         .history-btn {
-            background: none; color: var(--secondary-brown); 
-            font-size: 24px; opacity: 0.6; box-shadow: none;
-            margin-bottom: 20px;
+            background: none; color: var(--secondary-brown); font-size: 28px; 
+            opacity: 0.6; box-shadow: none; margin-bottom: 20px;
         }
+
+        /* 收藏清單視窗 (Modal) */
+        #history-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(62, 39, 35, 0.98); z-index: 100;
+            flex-direction: column; padding: 40px 20px; box-sizing: border-box;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; margin-bottom: 20px; border-bottom: 1px solid rgba(245, 245, 220, 0.2); padding-bottom: 10px;
+        }
+        .modal-title { color: #F5F5DC; font-size: 24px; }
+        .close-btn { background: none; color: #F5F5DC; font-size: 30px; padding: 0; box-shadow: none; }
+        
+        #history-list {
+            flex: 1; overflow-y: auto; width: 100%;
+        }
+        .history-item {
+            color: #F5F5DC; font-size: 16px; padding: 20px 0;
+            border-bottom: 1px solid rgba(245, 245, 220, 0.1);
+            text-align: center; line-height: 1.6; white-space: pre-wrap;
+        }
+        .empty-msg { color: rgba(245, 245, 220, 0.5); text-align: center; margin-top: 50px; }
     </style>
 </head>
 <body>
@@ -98,24 +98,32 @@
                 <img src="compass_dial.png" class="compass-part" id="dial" alt="錶盤">
                 <img src="compass_needle.png" class="compass-part" id="needle" alt="指針">
             </div>
-            
             <div id="poem-display">正在同步思念...</div>
-            
             <div class="btn-group">
                 <button id="refresh-btn">轉動心情</button>
                 <button id="save-btn">收藏此句</button>
             </div>
         </div>
         
-        <button class="history-btn" onclick="alert('收藏功能已啟用')">📜</button>
+        <button class="history-btn" id="open-history-btn">📜</button>
+    </div>
+
+    <div id="history-modal">
+        <div class="modal-header">
+            <span class="modal-title">收藏冊</span>
+            <button class="close-btn" id="close-history-btn">×</button>
+        </div>
+        <div id="history-list"></div>
     </div>
 
     <script>
-        // ⚠️ 請在這裡填入你的 Google Sheet CSV 網址
+        // ⚠️ 請填入你的 CSV 網址
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTFH83Pu0Q5UdKN1BxoAAhuKzLLbqMy8jmfTlGQM3-xR00Xk7fXCANmkfGS4zpYrLCCGCwtIX-UQ7Ks/pub?output=csv"; 
         
         let poemList = [];
+        let currentPoem = "";
 
+        // 日期與天氣
         function updateDate() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}年 ${String(now.getMonth() + 1).padStart(2, '0')}月 ${String(now.getDate()).padStart(2, '0')}日`;
@@ -134,54 +142,92 @@
             } catch (e) { document.getElementById('date-weather').innerHTML = `${dateStr}<br>台北 天氣未知`; }
         }
 
+        // 初始化
         async function init() {
             const dateStr = updateDate(); fetchWeather(dateStr);
             try {
                 const res = await fetch(SHEET_URL);
                 const text = await res.text();
-                // 處理 CSV 解析，去除引號
                 const lines = text.split('\n').map(l => l.trim().replace(/^"|"$/g, ''));
-                
                 if (lines.length >= 4) {
                     document.getElementById('app-title').innerText = lines[0];
                     document.getElementById('refresh-btn').innerText = lines[1];
                     document.getElementById('save-btn').innerText = lines[2];
-                    // 詩句處理：將 CSV 裡的空格轉換為換行
                     poemList = lines.slice(3).map(p => p.replace(/ /g, '\n'));
                     showNewPoem(false);
                 }
             } catch (e) { 
-                console.error(e);
-                document.getElementById('poem-display').innerText = "暫時失去聯繫，請確認 CSV 網址。"; 
+                document.getElementById('poem-display').innerText = "暫時失去聯繫，請確認網路。"; 
             }
         }
 
+        // 顯示新詩句
         function showNewPoem(animate = true) {
             if (poemList.length === 0) return;
             const needle = document.getElementById('needle');
             
             if (animate) {
-                // 重置指針
                 needle.style.transition = "none";
                 needle.style.transform = "rotate(0deg)";
-                
-                // 強制瀏覽器重繪 (Reflow) 以觸發新動畫
-                void needle.offsetWidth;
-
-                // 開始旋轉
+                void needle.offsetWidth; // 重繪
                 needle.style.transition = "transform 1s cubic-bezier(0.45, 0.05, 0.55, 0.95)";
                 needle.style.transform = "rotate(720deg)";
                 
                 setTimeout(() => {
-                    const randomPoem = poemList[Math.floor(Math.random() * poemList.length)];
-                    document.getElementById('poem-display').innerText = randomPoem;
+                    currentPoem = poemList[Math.floor(Math.random() * poemList.length)];
+                    document.getElementById('poem-display').innerText = currentPoem;
                 }, 1000);
             } else {
-                document.getElementById('poem-display').innerText = poemList[Math.floor(Math.random() * poemList.length)];
+                currentPoem = poemList[Math.floor(Math.random() * poemList.length)];
+                document.getElementById('poem-display').innerText = currentPoem;
+            }
+        }
+
+        // 🌟 收藏功能
+        function savePoem() {
+            if (!currentPoem || currentPoem.includes("同步")) return;
+            
+            // 讀取舊的收藏
+            let favorites = JSON.parse(localStorage.getItem('my_poems') || "[]");
+            
+            if (!favorites.includes(currentPoem)) {
+                favorites.unshift(currentPoem); // 加到最前面
+                localStorage.setItem('my_poems', JSON.stringify(favorites));
+                alert("已收入收藏冊");
+            } else {
+                alert("這句已經在收藏冊裡了");
+            }
+        }
+
+        // 🌟 顯示收藏列表
+        function toggleHistory(show) {
+            const modal = document.getElementById('history-modal');
+            const list = document.getElementById('history-list');
+            
+            if (show) {
+                let favorites = JSON.parse(localStorage.getItem('my_poems') || "[]");
+                list.innerHTML = "";
+                if (favorites.length === 0) {
+                    list.innerHTML = "<div class='empty-msg'>還沒有收藏任何詩句</div>";
+                } else {
+                    favorites.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'history-item';
+                        item.innerText = p;
+                        list.appendChild(item);
+                    });
+                }
+                modal.style.display = 'flex';
+            } else {
+                modal.style.display = 'none';
             }
         }
 
         document.getElementById('refresh-btn').onclick = () => showNewPoem(true);
+        document.getElementById('save-btn').onclick = savePoem;
+        document.getElementById('open-history-btn').onclick = () => toggleHistory(true);
+        document.getElementById('close-history-btn').onclick = () => toggleHistory(false);
+
         init();
     </script>
 </body>
