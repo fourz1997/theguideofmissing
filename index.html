@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>思念指南</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -17,57 +16,72 @@
             margin: 0; padding: 0; height: 100%;
             font-family: 'Noto Serif TC', serif;
             background-color: var(--bg-beige);
-            overflow: hidden;
+            /* 防止手機下拉重整 */
+            overscroll-behavior: none;
         }
 
         #bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            /* 這裡假設你有上傳 bg_paper.png，如果沒有會顯示米色背景 */
             background-image: url('bg_paper.png');
             background-size: cover; opacity: 0.5; z-index: -1;
         }
 
         .container {
             display: flex; flex-direction: column;
-            align-items: center; height: 100%; width: 100%;
+            align-items: center; justify-content: space-between;
+            height: 100vh; width: 100%;
             box-sizing: border-box; padding: 24px;
         }
 
-        .header { margin-top: 60px; text-align: center; }
+        /* 標題區 */
+        .header { margin-top: 40px; text-align: center; }
         h1 {
-            font-size: 42px; color: var(--primary-brown); margin: 0;
+            font-size: 36px; color: var(--primary-brown); margin: 0;
             font-weight: 700; letter-spacing: 2px;
         }
         .info-text {
             font-size: 14px; color: var(--secondary-brown); opacity: 0.7;
-            margin-top: 16px; line-height: 1.8;
+            margin-top: 10px; line-height: 1.6;
         }
 
+        /* 中間核心區 (指南針+詩) */
         .main-cluster {
-            flex: 1; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; width: 100%;
-            margin-top: -40px; /* 稍微往上提一點，符合作家視覺重心 */
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            width: 100%; flex: 1;
         }
 
-        .compass-box { position: relative; width: 280px; height: 280px; }
-        .compass-part { position: absolute; width: 100%; height: 100%; }
+        .compass-box {
+            position: relative; width: 260px; height: 260px;
+            margin-bottom: 20px;
+        }
+        .compass-part {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; object-fit: contain;
+        }
 
         #poem-display {
-            height: 140px; display: flex; align-items: center; justify-content: center;
+            min-height: 100px; display: flex; align-items: center; justify-content: center;
             text-align: center; font-size: 18px; color: var(--secondary-brown);
-            line-height: 28px; padding: 20px; white-space: pre-wrap;
+            line-height: 1.8; padding: 0 20px; white-space: pre-wrap;
+            margin-bottom: 30px;
         }
 
-        .btn-group { display: flex; gap: 12px; }
+        /* 按鈕區 */
+        .btn-group { display: flex; gap: 15px; margin-bottom: 20px;}
         button {
             background-color: var(--btn-color); color: white; border: none;
-            padding: 12px 24px; border-radius: 4px; font-size: 16px;
+            padding: 12px 24px; border-radius: 30px; font-size: 16px;
             font-family: 'Noto Serif TC', serif; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        button:active { opacity: 0.7; }
+        button:active { transform: scale(0.95); }
 
         .history-btn {
-            margin-bottom: 60px; background: none; border: none;
-            font-size: 24px; cursor: pointer; opacity: 0.5;
+            background: none; color: var(--secondary-brown); 
+            font-size: 24px; opacity: 0.6; box-shadow: none;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -76,25 +90,30 @@
     <div class="container">
         <div class="header">
             <h1 id="app-title">思念指南</h1>
-            <div id="date-weather" class="info-text">2026年 02月 18日<br>台北 讀取中...</div>
+            <div id="date-weather" class="info-text">載入中...</div>
         </div>
 
         <div class="main-cluster">
             <div class="compass-box">
-                <img src="compass_dial.png" class="compass-part" id="dial">
-                <img src="compass_needle.png" class="compass-part" id="needle">
+                <img src="compass_dial.png" class="compass-part" id="dial" alt="錶盤">
+                <img src="compass_needle.png" class="compass-part" id="needle" alt="指針">
             </div>
+            
             <div id="poem-display">正在同步思念...</div>
+            
             <div class="btn-group">
                 <button id="refresh-btn">轉動心情</button>
                 <button id="save-btn">收藏此句</button>
             </div>
         </div>
-        <button class="history-btn">📜</button>
+        
+        <button class="history-btn" onclick="alert('收藏功能已啟用')">📜</button>
     </div>
 
     <script>
-        const SHEET_URL = "你的_CSV_網址"; // ⬅️ 記得換成你的
+        // ⚠️ 請在這裡填入你的 Google Sheet CSV 網址
+        const SHEET_URL = "YOUR_SHEET_CSV_URL"; 
+        
         let poemList = [];
 
         function updateDate() {
@@ -120,27 +139,42 @@
             try {
                 const res = await fetch(SHEET_URL);
                 const text = await res.text();
-                const lines = text.split('\n').map(l => l.trim().replace(/"/g, ''));
+                // 處理 CSV 解析，去除引號
+                const lines = text.split('\n').map(l => l.trim().replace(/^"|"$/g, ''));
+                
                 if (lines.length >= 4) {
                     document.getElementById('app-title').innerText = lines[0];
                     document.getElementById('refresh-btn').innerText = lines[1];
                     document.getElementById('save-btn').innerText = lines[2];
+                    // 詩句處理：將 CSV 裡的空格轉換為換行
                     poemList = lines.slice(3).map(p => p.replace(/ /g, '\n'));
                     showNewPoem(false);
                 }
-            } catch (e) { document.getElementById('poem-display').innerText = "暫時失去聯繫，請檢查網路。"; }
+            } catch (e) { 
+                console.error(e);
+                document.getElementById('poem-display').innerText = "暫時失去聯繫，請確認 CSV 網址。"; 
+            }
         }
 
         function showNewPoem(animate = true) {
             if (poemList.length === 0) return;
             const needle = document.getElementById('needle');
+            
             if (animate) {
+                // 重置指針
+                needle.style.transition = "none";
+                needle.style.transform = "rotate(0deg)";
+                
+                // 強制瀏覽器重繪 (Reflow) 以觸發新動畫
+                void needle.offsetWidth;
+
+                // 開始旋轉
                 needle.style.transition = "transform 1s cubic-bezier(0.45, 0.05, 0.55, 0.95)";
                 needle.style.transform = "rotate(720deg)";
+                
                 setTimeout(() => {
-                    needle.style.transition = "none";
-                    needle.style.transform = "rotate(0deg)";
-                    document.getElementById('poem-display').innerText = poemList[Math.floor(Math.random() * poemList.length)];
+                    const randomPoem = poemList[Math.floor(Math.random() * poemList.length)];
+                    document.getElementById('poem-display').innerText = randomPoem;
                 }, 1000);
             } else {
                 document.getElementById('poem-display').innerText = poemList[Math.floor(Math.random() * poemList.length)];
